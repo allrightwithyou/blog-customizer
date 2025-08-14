@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useRef, useState } from 'react';
+import clsx from 'clsx';
 import { ArrowButton } from 'src/ui/arrow-button';
 import { Button } from 'src/ui/button';
 import { Select } from 'src/ui/select';
@@ -13,7 +14,9 @@ import {
 	fontSizeOptions,
 	ArticleStateType,
 	OptionType,
+	defaultArticleState,
 } from 'src/constants/articleProps';
+import { useClose } from './hooks';
 
 import styles from './ArticleParamsForm.module.scss';
 
@@ -21,72 +24,57 @@ type ArticleParamsFormProps = {
 	isOpen: boolean;
 	onToggle: () => void;
 	onClose: () => void;
-	formState: ArticleStateType;
-	onFormChange: (newState: ArticleStateType) => void;
-	onApply: () => void;
-	onReset: () => void;
+	onApply: (newState: ArticleStateType) => void;
 };
 
 export const ArticleParamsForm = ({
 	isOpen,
 	onToggle,
 	onClose,
-	formState,
-	onFormChange,
 	onApply,
-	onReset,
 }: ArticleParamsFormProps) => {
 	const sidebarRef = useRef<HTMLDivElement>(null);
 
-	// Обработчик клика вне сайдбара
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				sidebarRef.current &&
-				!sidebarRef.current.contains(event.target as Node)
-			) {
-				onClose();
-			}
-		};
+	// Состояние формы (временные настройки)
+	const [formState, setFormState] =
+		useState<ArticleStateType>(defaultArticleState);
 
-		if (isOpen) {
-			document.addEventListener('mousedown', handleClickOutside);
-		}
-
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
-	}, [isOpen, onClose]);
+	// Используем кастомный хук для закрытия
+	useClose({
+		isOpen,
+		onClose,
+		rootRef: sidebarRef,
+	});
 
 	// Обработчики изменения настроек
 	const handleFontFamilyChange = (option: OptionType) => {
-		onFormChange({ ...formState, fontFamilyOption: option });
+		setFormState({ ...formState, fontFamilyOption: option });
 	};
 
 	const handleFontColorChange = (option: OptionType) => {
-		onFormChange({ ...formState, fontColor: option });
+		setFormState({ ...formState, fontColor: option });
 	};
 
 	const handleBackgroundColorChange = (option: OptionType) => {
-		onFormChange({ ...formState, backgroundColor: option });
+		setFormState({ ...formState, backgroundColor: option });
 	};
 
 	const handleContentWidthChange = (option: OptionType) => {
-		onFormChange({ ...formState, contentWidth: option });
+		setFormState({ ...formState, contentWidth: option });
 	};
 
 	const handleFontSizeChange = (option: OptionType) => {
-		onFormChange({ ...formState, fontSizeOption: option });
+		setFormState({ ...formState, fontSizeOption: option });
 	};
 
 	// Обработчики кнопок
 	const handleApply = (e: React.FormEvent) => {
 		e.preventDefault();
-		onApply();
+		onApply(formState);
 	};
 
 	const handleReset = () => {
-		onReset();
+		setFormState(defaultArticleState);
 	};
 
 	return (
@@ -94,9 +82,9 @@ export const ArticleParamsForm = ({
 			<ArrowButton isOpen={isOpen} onClick={onToggle} />
 			<aside
 				ref={sidebarRef}
-				className={`${styles.container} ${
-					isOpen ? styles.container_open : ''
-				}`}>
+				className={clsx(styles.container, {
+					[styles.container_open]: isOpen,
+				})}>
 				<form className={styles.form} onSubmit={handleApply}>
 					<Text
 						as='h3'
